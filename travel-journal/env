@@ -1,0 +1,3 @@
+DATABASE_URL = postgres://unmsyoxgfhdsuy:61f63312749bdcd28e0732f622f7baf520f278d803041886dbbbb7255e52dae1@ec2-54-161-255-125.compute-1.amazonaws.com:5432/db3batteatuj02
+
+SERVER_PORT = 4004
