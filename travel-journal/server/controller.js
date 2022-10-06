@@ -1,72 +1,34 @@
-require('dotenv').config()
-console.log(process.env)
+require("dotenv").config();
+const { CONNECTION_STRING } = process.env;
 
-const sequelize = require('sequelize');
-const { Sequelize } = require('sequelize');
-{
-    dialect: 'postgres',
-    dialectOptions = {
-        ssl: {
-            rejectUnauthorized: false
-        }
-    }
-  };
+const Sequelize = require("sequelize");
 
-
-
-  module.exports = {
-    getCountries: (req, res) => {
-        sequelize.query(`select * from cc_countries`)
-            .then(dbRes => res.status(200).send(dbRes[0]))
-            .catch(err => console.log(err))
-    }
-};
+const sequelize = new Sequelize(CONNECTION_STRING, {
+  dialect: "postgres",
+  dialectOptions: {
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  },
+});
 
 module.exports = {
-    createCity: (req, res) => {
-            const {city_id} = req.body 
-            sequelize.query(`insert into cc_cities`)
-        values ('${cityId}', '${name}', '${rating}')
-            .then(dbRes => res.status(200).send(dbRes[0]))
-            .catch(err => console.log(err))
-    }
-};
-
-module.exports = {
-    getCities: (req, res) => {
-        sequelize.query(`select * from cc_cities`)
-            .then(dbRes => res.status(200).send(dbRes[0]))
-            .catch(err => console.log(err))
-    }
-};
-
-module.exports = {
-    deleteCity: (req,res) => {
-        sequelize.query('delete * from cc_cities')
-        .then(dbRes => res.status(200).send(dbRes[0]))
-        .catch(err => console.log(err))
-    }
-};
-
-module.exports = {
-    seed: (req, res) => {
-        sequelize.query(`
+  seed: (req, res) => {
+    sequelize
+      .query(
+        `
             drop table if exists cities;
             drop table if exists countries;
-
             create table countries (
                 country_id serial primary key, 
                 name varchar
             );
-
-            var mysql = require('mysql');
-
-            create table cc_cities (
-                city_id serial primary key, 
-                name varchar(100), 
-                integer country_id 
+            create table cities (
+                city_id serial primary key,
+                name varchar,
+                rating int,
+                country_id int not null references countries(country_id)
             );
-
             insert into countries (name)
             values ('Afghanistan'),
             ('Albania'),
@@ -263,9 +225,56 @@ module.exports = {
             ('Yemen'),
             ('Zambia'),
             ('Zimbabwe');
-        `).then(() => {
-            console.log('DB seeded!')
-            res.sendStatus(200)
-        }).catch(err => console.log('error seeding DB', err))
-    }
-}
+        `
+      )
+      .then(() => {
+        console.log("DB seeded!");
+        res.sendStatus(200);
+      })
+      .catch((err) => console.log("error seeding DB", err));
+  },
+  getCountries: (req, res) => {
+    sequelize
+      .query(
+        `
+        select * from countries
+      `
+      )
+      .then((dbRes) => res.status(200).send(dbRes[0]))
+      .catch((err) => console.log(err));
+  },
+  createCity: (req, res) => {
+    const { name, rating, countryId } = req.body;
+    sequelize
+      .query(
+        `
+        insert into cities(name,rating,country_id)
+        values('${name}',${rating},${countryId});
+      `
+      )
+      .then((dbRes) => res.status(200).send(dbRes[0]))
+      .catch((err) => console.log(err));
+  },
+  getCities: (req, res) => {
+    sequelize
+      .query(
+        `
+      select city_id, c.name as city,rating,co.country_id,co.name as country from cities c
+      join countries co
+      on c.country_id = co.country_id
+      order by rating desc;
+      `
+      )
+      .then((dbRes) => res.status(200).send(dbRes[0]))
+      .catch((err) => console.log(err));
+  },
+  deleteCity: (req, res) => {
+    const { id } = req.params;
+    sequelize.query(`
+        delete from cities
+        where city_id = ${+id};
+    `)
+    .then(dbRes => res.status(200).send(dbRes[0]))
+    .catch(err => console.log(err))
+  },
+};
